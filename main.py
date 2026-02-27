@@ -19,16 +19,16 @@ fond_width = fond_image.get_width() * height // fond_image.get_height()
 fond_image = p.transform.scale(fond_image, (fond_width, height))
 terre_image = p.image.load('terre.png')
 terre_image = p.transform.scale(terre_image, (fond_width, terre_hauteur))
-plateforme_image1 = p.image.load("plateforme1.png")
+plateforme_image1 = p.image.load("plateformes/plateforme1.png")
 plateforme_image1 = p.transform.scale(plateforme_image1, (520, 172))
-plateforme_image2 = p.image.load("plateforme2.png")
+plateforme_image2 = p.image.load("plateformes/plateforme2.png")
 plateforme_image2 = p.transform.scale(plateforme_image2, (236, 50))
-plateforme_image3 = p.image.load("plateforme3.png")
-plateforme_image4 = p.image.load("plateforme4.png")
-plateforme_image5 = p.image.load("plateforme5.png")
-plateforme_image6 = p.image.load("plateforme6.png")
+plateforme_image3 = p.image.load("plateformes/plateforme3.png")
+plateforme_image4 = p.image.load("plateformes/plateforme4.png")
+plateforme_image5 = p.image.load("plateformes/plateforme5.png")
+plateforme_image6 = p.image.load("plateformes/plateforme6.png")
 plateforme_image6 = p.transform.scale(plateforme_image6, (700, 172))
-plateforme_image7 = p.image.load("plateforme7.png")
+plateforme_image7 = p.image.load("plateformes/plateforme7.png")
 plateforme_image7 = p.transform.scale(plateforme_image7, (400, 135))
 nuages_image = p.image.load('nuages.png')
 nuages_image = p.transform.scale(nuages_image,(fond_width, height))
@@ -136,7 +136,13 @@ def main():
     plateforme6.rect.bottom = terre_y
     plateforme7 = Plateforme(3900, 0, plateforme_image7)
     plateforme7.rect.bottom = terre_y
-    plateformes = [plateforme1, plateforme2, plateforme3, plateforme4, plateforme5,plateforme6,plateforme7]
+    plateforme8 = Plateforme(2400, 200, plateforme_image2)
+    plateforme9 = Plateforme(2900, 150, plateforme_image3)
+    plateforme10 = Plateforme(3200, 400, plateforme_image4)
+    plateforme11 = Plateforme(3500, 290, plateforme_image3)
+    plateforme12 = Plateforme(3600, 270, plateforme_image3)
+    plateforme13 = Plateforme(3700, 260, plateforme_image3)
+    plateformes = [plateforme1, plateforme2, plateforme3, plateforme4, plateforme5,plateforme6,plateforme7, plateforme8, plateforme9, plateforme10, plateforme11, plateforme12, plateforme13]
     running = True
     while running:
         for event in p.event.get():
@@ -158,8 +164,6 @@ def main():
         screen.blit(nuages_image, (-camera_x * 0.5, 0))
         screen.blit(eau_image, (-camera_x, height - 530))
         screen.blit(terre_image, (-camera_x, height - terre_hauteur))
-        for plat in plateformes:
-            plat.draw(screen, camera_x)
         chat.draw(screen, camera_x)
         clock.tick(60)
         p.display.flip()
