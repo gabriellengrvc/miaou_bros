@@ -4,21 +4,24 @@ import sys
 #initialisation de pygame 
 p.init()
 clock = p.time.Clock()
-width, height = 800,600
-terre_hauteur = 50
-terre_y = height - terre_hauteur
-screen = p.display.set_mode((width, height))
+largeur, hauteur = 800,600
+screen = p.display.set_mode((largeur, hauteur))
 p.display.set_caption("Miau bros")
 font = p.font.Font('PressStart2P-Regular.ttf', 30)
 
+#variables
+terre_hauteur = 50
+terre_y = hauteur - terre_hauteur
+eau_y = terre_y - 30
+
 #images
-chat_image = p.image.load('chat.png')
+chat_image = p.image.load('images/chat.png')
 chat_image = p.transform.scale(chat_image, (70, 70))
-fond_image = p.image.load('fond.png')
-fond_width = fond_image.get_width() * height // fond_image.get_height()
-fond_image = p.transform.scale(fond_image, (fond_width, height))
-terre_image = p.image.load('terre.png')
-terre_image = p.transform.scale(terre_image, (fond_width, terre_hauteur))
+fond_image = p.image.load('images/fond.png')
+fond_largeur = fond_image.get_width() * hauteur // fond_image.get_height()
+fond_image = p.transform.scale(fond_image, (fond_largeur, hauteur))
+terre_image = p.image.load('images/terre.png')
+terre_image = p.transform.scale(terre_image, (fond_largeur, terre_hauteur))
 plateforme_image1 = p.image.load("plateformes/plateforme1.png")
 plateforme_image1 = p.transform.scale(plateforme_image1, (520, 172))
 plateforme_image2 = p.image.load("plateformes/plateforme2.png")
@@ -30,55 +33,54 @@ plateforme_image6 = p.image.load("plateformes/plateforme6.png")
 plateforme_image6 = p.transform.scale(plateforme_image6, (700, 172))
 plateforme_image7 = p.image.load("plateformes/plateforme7.png")
 plateforme_image7 = p.transform.scale(plateforme_image7, (400, 135))
-nuages_image = p.image.load('nuages.png')
-nuages_image = p.transform.scale(nuages_image,(fond_width, height))
-nuages2_image = p.image.load('nuages2.png')
-nuages2_image = p.transform.scale(nuages2_image,(fond_width, height))
-eau_image = p.image.load('eau.png')
-eau_image = p.transform.scale(eau_image, (fond_width, height))
+nuages_image = p.image.load('images/nuages.png')
+nuages_image = p.transform.scale(nuages_image,(fond_largeur, hauteur))
+nuages2_image = p.image.load('images/nuages2.png')
+nuages2_image = p.transform.scale(nuages2_image,(fond_largeur, hauteur))
+eau_image = p.image.load('images/eau.png')
+eau_image = p.transform.scale(eau_image, (fond_largeur, hauteur))
 
 #le chat
 class Chat:
     def __init__(self, x, y):
+        self.start_x = x
+        self.start_y = y
         self.original_image = chat_image
         self.image = self.original_image
         self.world_x = float(x)
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.vel_y = 0
+        self.deplacement_x = 0
+        self.deplacement_y = 0
         self.vitesse = 5
-        self.gravity = 0.8
+        self.gravite = 0.8
         self.saute_niveau = -15
         self.sur_terre = False
         self.sautes_restants = 2
         self.rotation = False
         self.angle = 0
 
-    def move_left(self):
-        self.world_x -= self.vitesse
-
-    def move_right(self):
-        self.world_x += self.vitesse
-
     def update(self, plateformes):
+        self.world_x += self.deplacement_x
         self.rect.x = int(self.world_x)
-        self.vel_y += self.gravity
-        self.rect.y += int(self.vel_y)
+        #Utilisation de la gravité
+        self.rect.y += int(self.deplacement_y)
+        self.deplacement_y += self.gravite
 
         for plat in plateformes:
             if self.rect.colliderect(plat.rect):
-                if self.vel_y > 0:  # falling
+                if self.deplacement_y > 0:  # falling
                     self.rect.bottom = plat.rect.top
-                    self.vel_y = 0
+                    self.deplacement_y = 0
                     self.sautes_restants = 2
                     self.rotation = False
                     self.angle = 0
-                elif self.vel_y < 0:  # jumping up
+                elif self.deplacement_y < 0:  # jumping up
                     self.rect.top = plat.rect.bottom
-                    self.vel_y = 0
+                    self.deplacement_y = 0
 
         if self.rect.bottom >= terre_y:
             self.rect.bottom = terre_y
-            self.vel_y = 0
+            self.deplacement_y = 0
             self.sautes_restants = 2
             self.rotation = False
             self.angle = 0
@@ -93,20 +95,31 @@ class Chat:
             self.rect = self.image.get_rect(center=old_center)
         else:
             self.image = self.original_image
+
+        if self.rect.bottom >= eau_y:
+            self.reset()
             
     def saute(self):
         if self.sautes_restants > 0:
             if self.sautes_restants == 1: 
-                self.vel_y = self.saute_niveau * 1.2
+                self.deplacement_y = self.saute_niveau * 1.2
                 self.rotation = True
             else:
-                self.vel_y = self.saute_niveau
+                self.deplacement_y = self.saute_niveau
             self.sautes_restants -= 1
 
     def draw(self, surface, camera_x):
         screen_x = int(self.world_x - camera_x)
-        self.rect.x = screen_x
-        surface.blit(self.image, self.rect)
+        surface.blit(self.image, (screen_x, self.rect.y))
+
+    def reset(self):
+        self.world_x = self.start_x
+        self.rect.x = self.start_x
+        self.rect.y = self.start_y
+        self.deplacement_y = 0
+        self.sautes_restants = 2
+        self.rotation = False
+        self.angle = 0
             
 #les plateformes 
 class Plateforme:
@@ -122,8 +135,8 @@ def clamp(v, lo, hi):
 
 #boucle principale du jeu
 def main():
-    chat = Chat(50, height // 2)
-    world_width = fond_width  
+    chat = Chat(50, hauteur // 2)
+    world_largeur = fond_largeur  
     plateforme1 = Plateforme(0, 0, plateforme_image1)
     plateforme1.rect.bottom = terre_y 
     plateforme2 = Plateforme(550, 300, plateforme_image2)
@@ -140,33 +153,40 @@ def main():
     plateforme9 = Plateforme(2900, 150, plateforme_image3)
     plateforme10 = Plateforme(3200, 400, plateforme_image4)
     plateforme11 = Plateforme(3500, 290, plateforme_image3)
-    plateforme12 = Plateforme(3600, 270, plateforme_image3)
-    plateforme13 = Plateforme(3700, 260, plateforme_image3)
+    plateforme12 = Plateforme(3650, 260, plateforme_image3)
+    plateforme13 = Plateforme(3800, 240, plateforme_image3)
     plateformes = [plateforme1, plateforme2, plateforme3, plateforme4, plateforme5,plateforme6,plateforme7, plateforme8, plateforme9, plateforme10, plateforme11, plateforme12, plateforme13]
     running = True
     while running:
         for event in p.event.get():
             if event.type == p.QUIT:
                 running = False
-            if event.type == p.KEYDOWN and event.key == p.K_SPACE:
-                chat.saute()
-        keys = p.key.get_pressed()
-        if keys[p.K_LEFT]:
-            chat.move_left()
-        if keys[p.K_RIGHT]:
-            chat.move_right()
-        chat.world_x = clamp(chat.world_x, 0, world_width - chat.rect.width)
+            if event.type == p.KEYDOWN:
+                if event.key == p.K_LEFT:
+                    chat.deplacement_x = -chat.vitesse
+                elif event.key == p.K_RIGHT:
+                    chat.deplacement_x = chat.vitesse
+                elif event.key == p.K_SPACE:
+                    chat.saute()
+            if event.type == p.KEYUP:
+                if event.key == p.K_LEFT or event.key == p.K_RIGHT:
+                    chat.deplacement_x = 0
         chat.update(plateformes)
-        camera_x = chat.world_x + chat.rect.width/2 - width/2
-        camera_x = clamp(camera_x, 0, world_width - width)
+        chat.world_x = clamp(chat.world_x, 0, world_largeur - chat.rect.width)
+        camera_x = chat.world_x + chat.rect.width/2 - largeur/2
+        camera_x = clamp(camera_x, 0, world_largeur - largeur)
         screen.blit(fond_image, (-camera_x, 0))
         screen.blit(nuages2_image, (-camera_x * 0.3, 0))
         screen.blit(nuages_image, (-camera_x * 0.5, 0))
-        screen.blit(eau_image, (-camera_x, height - 530))
-        screen.blit(terre_image, (-camera_x, height - terre_hauteur))
+        screen.blit(eau_image, (-camera_x, hauteur - 530))
+        screen.blit(terre_image, (-camera_x, hauteur - terre_hauteur))
+        for plat in plateformes:
+            plat.draw(screen, camera_x)
         chat.draw(screen, camera_x)
-        clock.tick(60)
+        titre = font.render("Miaou Bros", True, (255,255,255))
+        screen.blit(titre, (largeur // 2 - titre.get_width() // 2 , 20))
         p.display.flip()
+        clock.tick(60)
 
     p.quit()
     sys.exit()
