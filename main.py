@@ -24,7 +24,6 @@ chat_image = p.image.load('images/chat.png')
 chat_image = p.transform.scale(chat_image, (70, 70))
 fond_image = p.image.load('images/fond.png')
 terre_image = p.image.load('images/terre.png')
-terre_image = p.transform.scale(terre_image, (fond_largeur, terre_hauteur))
 plateforme_image1 = p.image.load("plateformes/plateforme1.png")
 plateforme_image1 = p.transform.scale(plateforme_image1, (520, 172))
 plateforme_image2 = p.image.load("plateformes/plateforme2.png")
@@ -36,42 +35,37 @@ plateforme_image6 = p.transform.scale(plateforme_image6, (700, 172))
 plateforme_image7 = p.image.load("plateformes/plateforme7.png")
 plateforme_image7 = p.transform.scale(plateforme_image7, (400, 135))
 nuages_image = p.image.load('images/nuages.png')
-nuages_image = p.transform.scale(nuages_image,(fond_largeur, hauteur))
 nuages2_image = p.image.load('images/nuages2.png')
-nuages2_image = p.transform.scale(nuages2_image,(fond_largeur, hauteur))
 eau_image = p.image.load('images/eau.png')
-eau_image = p.transform.scale(eau_image, (fond_largeur, hauteur))
 
 #le chat
 class Chat:
     def __init__(self, x, y):
-        self.start_x = x
-        self.start_y = y
-        self.original_image = chat_image
-        self.image = self.original_image
+        self.debut_x = x
+        self.debut_y = y
+        #world_x est la position du chat dans le monde
+        self.world_x = x
+        self.image = chat_image
         self.diff_x = 0
         self.diff_y = 0
-        base_rect = self.original_image.get_rect()
-        self.base_centre_x = base_rect.centerx
-        self.base_centre_y = base_rect.centery
-        #world_x est la position du chat dans le monde
-        self.world_x = float(x)
+        chat_taille = self.image.get_rect()
+        self.chat_centre_x = chat_taille.center[0]
+        self.chat_centre_y = chat_taille.center[1]
         self.rect = self.image.get_rect(topleft=(x, y))
         self.deplacement_x = 0
         self.deplacement_y = 0
         self.vitesse = 4
         self.gravite = 0.8
-        self.saute_niveau = -12
-        self.sur_terre = False
+        self.intensite_saute = -15
         self.sautes_restants = 2
         self.rotation = False
         self.angle = 0
 
-    def update(self, plateformes):
+    def mettre_a_jour(self, plateformes):
         self.world_x += self.deplacement_x
         self.rect.x = int(self.world_x)
-        #utilisation de la gravité
         self.rect.y += int(self.deplacement_y)
+        #utilisation de la gravité
         self.deplacement_y += self.gravite
 
         for plat in plateformes:
@@ -86,54 +80,45 @@ class Chat:
                     self.rect.top = plat.rect.bottom
                     self.deplacement_y = 0
 
-        if self.rect.bottom >= terre_y:
-            self.rect.bottom = terre_y
-            self.deplacement_y = 0
-            self.sautes_restants = 2
-            self.rotation = False
-            self.angle = 0
-
+        #rotation de l'image lorsque le chat fait un double saut
         if self.rotation:
             self.angle += 10
             if self.angle >= 360:
                 self.angle = 0
                 self.rotation = False
-            #rotation de l'image
-            self.image = p.transform.rotate(self.original_image, self.angle)
-            #taille + centre de la surface tournée
-            rot_rect = self.image.get_rect()
-            rot_centre_x = rot_rect.centerx
-            rot_centre_y = rot_rect.centery
-
-            self.diff_x = rot_centre_x - self.base_centre_x
-            self.diff_y = rot_centre_y - self.base_centre_y
+            self.image = p.transform.rotate(chat_image, self.angle)
+            chat_rot_taille = self.image.get_rect()
+            chat_rot_centre_x = chat_rot_taille.center[0]
+            chat_rot_centre_y = chat_rot_taille.center[1]
+            self.diff_x = int(chat_rot_centre_x - self.chat_centre_x)
+            self.diff_y = int(chat_rot_centre_y - self.chat_centre_y)
         else:
-            self.image = self.original_image
+            self.image = chat_image
             self.diff_x = 0
             self.diff_y = 0
 
         if self.rect.bottom >= eau_y:
-            self.reset()
+            self.reinitialiser()
             
     def saute(self):
         if self.sautes_restants > 0:
             if self.sautes_restants == 1: 
-                self.deplacement_y = self.saute_niveau * 1.2
+                self.deplacement_y = self.intensite_saute * 1.2
                 self.rotation = True
             else:
-                self.deplacement_y = self.saute_niveau
+                self.deplacement_y = self.intensite_saute
             self.sautes_restants -= 1
     
     #camera_x est la position de la caméra dans le monde, on soustrait camera_x à world_x pour obtenir la position du chat à l'écran
     #screen_x est la position du chat à l'écran
-    def draw(self, surface, camera_x):
+    def affiche(self, surface, camera_x):
         screen_x = int(self.world_x - camera_x)
         surface.blit(self.image, (screen_x - self.diff_x, self.rect.y - self.diff_y))
 
-    def reset(self):
-        self.world_x = self.start_x
-        self.rect.x = self.start_x
-        self.rect.y = self.start_y
+    def reinitialiser(self):
+        self.world_x = self.debut_x
+        self.rect.x = self.debut_x
+        self.rect.y = self.debut_y
         self.deplacement_y = 0
         self.sautes_restants = 2
         self.rotation = False
@@ -146,7 +131,7 @@ class Plateforme:
         self.rect = self.image.get_rect(topleft=(x, y))
 
     #lorsque la camera_x augmente, les plateformes se déplacent vers la gauche
-    def draw(self, surface, camera_x):
+    def affiche(self, surface, camera_x):
         surface.blit(self.image, (self.rect.x - camera_x, self.rect.y))
 
 #boucle principale du jeu
@@ -182,7 +167,7 @@ def main():
             if event.type == p.KEYDOWN:
                 if event.key == p.K_LEFT:
                     chat.deplacement_x = -chat.vitesse
-                elif event.key == p.K_RIGHT:
+                elif event.key == p.K_RIGHT:            
                     chat.deplacement_x = chat.vitesse
                 elif event.key == p.K_SPACE:
                     chat.saute()
@@ -192,7 +177,9 @@ def main():
                 elif event.key == p.K_RIGHT:
                     chat.deplacement_x = 0
         
-        chat.update(plateformes)
+        chat.mettre_a_jour(plateformes)
+
+        #on limite le déplacement du chat dans le monde
         if chat.world_x < 0:
             chat.world_x = 0
         if chat.world_x > fond_largeur - chat.rect.width:
@@ -200,6 +187,7 @@ def main():
 
         #camera_x est la position de la caméra dans le monde
         camera_x = chat.world_x + chat.rect.width/2 - largeur/2
+        #on limite la camera_x pour éviter de montrer des zones vides à gauche ou à droite du fond
         if camera_x < 0:
             camera_x = 0
         if camera_x > fond_largeur - largeur:
@@ -214,8 +202,8 @@ def main():
         screen.blit(terre_image, (-camera_x, terre_y))
         
         for plat in plateformes:
-            plat.draw(screen, camera_x)
-        chat.draw(screen, camera_x)
+            plat.affiche(screen, camera_x)
+        chat.affiche(screen, camera_x)
         titre = font.render("Miaou Bros", True, (255,255,255))
         screen.blit(titre, (largeur // 2 - titre.get_width() // 2 , 20))
         p.display.flip()
